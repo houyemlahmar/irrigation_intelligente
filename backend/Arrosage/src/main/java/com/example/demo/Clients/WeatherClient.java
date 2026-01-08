@@ -10,7 +10,7 @@ import com.example.demo.DTOs.WeatherDTO;
 /**
  * Client Feign pour accéder à l'API Open-Meteo via le service Meteo
  */
-@FeignClient(name = "weather-service", url = "http://localhost:8084", path = "/api/weather")
+@FeignClient(name = "Meteo", path = "/api/weather", contextId = "weatherClient")
 public interface WeatherClient {
     
     /**

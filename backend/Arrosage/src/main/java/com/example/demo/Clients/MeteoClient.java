@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.demo.DTOs.PrevisionDTO;
 
-@FeignClient(name = "meteo-service", url = "http://localhost:8084", path = "/api/previsions")
+@FeignClient(name = "Meteo", path = "/api/previsions")
 public interface MeteoClient {
 	
 	@GetMapping("/station/{stationId}")

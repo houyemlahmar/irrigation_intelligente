@@ -86,6 +86,8 @@ public class PrevisionMeteoService {
 		event.setDate(prevision.getDate());
 		event.setPluiePrevue(prevision.getPluiePrevue());
 		event.setTemperatureMax(prevision.getTemperatureMax());
+		event.setTemperatureMin(prevision.getTemperatureMin());
+		event.setVent(prevision.getVent());
 		
 		if (prevision.getPluiePrevue() != null && prevision.getPluiePrevue() > 10) {
 			event.setTypeChangement("PLUIE_FORTE");
@@ -98,5 +100,8 @@ public class PrevisionMeteoService {
 		// Publication asynchrone via RabbitMQ
 		rabbitTemplate.convertAndSend(EXCHANGE_NAME, ROUTING_KEY, event);
 		System.out.println("=== Événement météo publié vers RabbitMQ ===");
+		System.out.println("   Station: " + event.getNomStation());
+		System.out.println("   Type: " + event.getTypeChangement());
+		System.out.println("   Message: " + event.getMessage());
 	}
 }

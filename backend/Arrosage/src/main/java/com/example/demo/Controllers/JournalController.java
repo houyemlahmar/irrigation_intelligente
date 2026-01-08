@@ -18,7 +18,7 @@ import com.example.demo.Repositories.JournalRepo;
 
 @RestController
 @RequestMapping("/api/journal")
-public class JounalController {
+public class JournalController {
 	
 	@Autowired
 	private JournalRepo journalRepo;

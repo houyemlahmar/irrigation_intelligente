@@ -1,4 +1,4 @@
-# Dockerfile pour MS_config (Config Server)
+# Dockerfile pour MS_Arrosage (Microservice Métier)
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY target/*.jar app.jar
 
 # Port exposé
-EXPOSE 9999
+EXPOSE 8083
 
 # Démarrage de l'application
 ENTRYPOINT ["java","-jar","app.jar"]
