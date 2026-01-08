@@ -1,166 +1,143 @@
-🌱 Système d'Irrigation Intelligente - Architecture Microservices
-📋 Description du Projet
+# 🌱 Application de Gestion de l'Irrigation Automatisée
+
 Application web basée sur une architecture microservices pour la gestion intelligente de l'arrosage agricole. Le système utilise les prévisions météorologiques et les données météo en temps réel (API Open-Meteo) pour optimiser automatiquement les programmes d'arrosage.
 
-Fonctionnalités principales :
-Gestion des stations météo : Création et gestion des stations avec coordonnées GPS
-Intégration Open-Meteo : Récupération de la météo en temps réel via API externe (sans clé API)
-Gestion des prévisions météo : Création, consultation et mise à jour des données prévisionnelles
-Planification automatique de l'arrosage : Ajustement intelligent basé sur les conditions météo actuelles et prévues
-Communication synchrone : Via OpenFeign et RestTemplate entre microservices
-Communication asynchrone : Via RabbitMQ pour les événements météo critiques
-Configuration centralisée : Via Spring Cloud Config Server (GitHub)
-Service Discovery : Via Netflix Eureka
-API Gateway : Routage dynamique via Spring Cloud Gateway
-🏗️ Architecture
-                    ┌────────────────┐
-                    │  Config Server │
-                    │   (Port 9999)  │
-                    │   GitHub Repo  │
-                    └───────┬────────┘
-                            │
-┌─────────────┐     ┌───────┴─────┐      ┌──────────┐     ┌─────────────┐
-│   Client    │────▶│   Gateway   │────▶│  Eureka  │     │  RabbitMQ   │
-│  (Postman)  │     │ (Port 9090) │      │  (8761)  │     │   (5672)    │
-└─────────────┘     └──────┬──────┘      └────┬─────┘     └──────┬──────┘
-                           │                  │                  │
-              ┌────────────┴─────────────┐    │                  │
-              ▼                          ▼    │                  │
-     ┌─────────────────┐      ┌──────────────────┐               │
-     │     Meteo       │      │    Arrosage      │               │
-     │   (Port 8084)   │      │   (Port 8083)    │               │
-     │                 │      │                  │               │
-     │ - Stations      │◀─────│ - Programmes     │              │
-     │ - Prévisions    │ Feign│ - Journaux       │               │
-     │ - Open-Meteo ☁️ │      │ - Parcelles      │              │
-     └────────┬────────┘      └────────┬─────────┘               │
-              │                        │                         │
-              ├────────────────────────┴─────────────────────────┘
-              │        RabbitMQ Event Bus (Asynchrone)
-              │
-              ▼
-       ┌──────────────┐
-       │ Open-Meteo   │
-       │     API      │
-       │ (External)   │
-       └──────────────┘
-       
-🛠️ Technologies Utilisées
-Backend
-| Technologie | Version | Description | |-------------|---------|-------------| | Java | 17 | Langage de programmation | | Spring Boot | 4.0.1 | Framework principal | | Spring Cloud | 2025.1.0 | Microservices patterns | | Spring Cloud Netflix Eureka | - | Service Discovery | | Spring Cloud Config | - | Configuration centralisée (GitHub) | | Spring Cloud Gateway | - | API Gateway | | Spring Cloud OpenFeign | - | Communication synchrone inter-services | | Spring AMQP (RabbitMQ) | - | Messaging asynchrone (événements météo) | | RestTemplate | - | Client HTTP pour API externe (Open-Meteo) | | Spring Data JPA | - | Persistance des données | | MySQL | 8.0 | Base de données (production) | | Lombok | - | Réduction du boilerplate code | | Maven | 3.8+ | Build tool |
+## 🏗️ Architecture
 
-API Externe
-| API | Description | |-----|-------------| | Open-Meteo | API météo gratuite, sans clé API requise | | URL | https://api.open-meteo.com/v1/forecast | | Features | Météo actuelle, prévisions, données historiques |
+```
+                           ┌─────────────────────────────────────────────────────────────┐
+                           │                    INFRASTRUCTURE                           │
+                           ├─────────────────────────────────────────────────────────────┤
+                           │  ┌─────────────────┐         ┌─────────────────┐            │
+                           │  │   ms_eureka     │         │    MS_config    │            │
+                           │  │  Service Disco  │◄───────►│  Config Server  │            │
+                           │  │    :8761        │         │    :9999        │            │
+                           │  └────────┬────────┘         └────────┬────────┘            │
+                           │           │         registre          │ config               │
+                           │           └────────────┬──────────────┘                     │
+                           └────────────────────────┼────────────────────────────────────┘
+                                                    │
+                           ┌────────────────────────▼────────────────────────────────────┐
+                           │                      GATEWAY                                │
+                           │  ┌─────────────────────────────────────────────────────┐   │
+                           │  │                   Gateway :9090                      │   │
+                           │  │     /api/stations/** /api/previsions/** /api/weather│   │
+                           │  │     /api/programmes/** /api/journal/**              │   │
+                           │  └──────────────────────────┬──────────────────────────┘   │
+                           └─────────────────────────────┼──────────────────────────────┘
+                                                         │
+                ┌────────────────────────────────────────┴───────────────────────────────────┐
+                │                           MICROSERVICES MÉTIER                             │
+                │         ┌───────────────────────────────┐                                  │
+     ┌──────────┼─────────┤        MS_Meteo :8084         │     ┌────────────────────────────┐│
+     │ HTTP/REST│         │  ┌─────────────────────────┐  │     │       Arrosage :8083       ││
+     │          │         │  │ • StationMeteo          │  │     │  ┌──────────────────────┐  ││
+     │          │         │  │ • PrevisionMeteo        │  │◄────┼──│ • ProgrammeArrosage  │  ││
+     │          │         │  │ • OpenMeteoClient       │  │Feign│  │ • JournalArrosage    │  ││
+     │          │         │  └─────────────────────────┘  │     │  │ • MeteoClient (Feign)│  ││
+     │          │         └───────────────┬───────────────┘     │  └──────────────────────┘  ││
+     │          │                         │                     └───────────────┬────────────┘│
+     │          └─────────────────────────┼─────────────────────────────────────┼─────────────┘
+     │                                    │                                     │
+     │                                    │        ┌─────────────────┐          │
+     │                                    │        │    RabbitMQ     │          │
+     │                                    └───────►│   (CloudAMQP)   │◄─────────┘
+     │                                   publish   │ ChangementEvent │  consume
+     │                                             └─────────────────┘
+     │
+     │         ┌─────────────────────────────────────────────────────────────┐
+     └────────►│                    EXTERNAL API                             │
+               │  ┌─────────────────────────────────────────────────────┐   │
+               │  │              Open-Meteo API (temps réel)             │   │
+               │  │         https://api.open-meteo.com/v1/forecast       │   │
+               │  └─────────────────────────────────────────────────────┘   │
+               └─────────────────────────────────────────────────────────────┘
+```
 
-Message Broker
-| Technologie | Port | Description | |-------------|------|-------------| | RabbitMQ | 5672 (AMQP) | Message broker pour événements asynchrones |
+### 🔄 Flux de communication
 
-📁 Structure des Microservices
-irrigation-intelligente/
-├── .gitignore
-├── README.md
-├── backend/
-│   ├── config-repo/              # 📝 Configuration centralisée (GitHub)
-│   │   ├── README.md
-│   │   ├── Arrosage.properties
-│   │   ├── Gateway.properties
-│   │   └── Meteo.properties
-│   │
-│   ├── ms-eureka/                # 🔍 Service Discovery
-│   │   ├── src/
-│   │   └── pom.xml
-│   │
-│   ├── MS-config/                # ⚙️ Configuration Server
-│   │   ├── src/
-│   │   └── pom.xml
-│   │
-│   ├── Gateway/                  # 🚪 API Gateway
-│   │   ├── src/
-│   │   └── pom.xml
-│   │
-│   ├── Meteo/            # 🌦️ Service Météo
-│   │   ├── src/
-│   │   │   ├── Controllers/
-│   │   │   │   ├── StationMeteoController.java
-│   │   │   │   ├── PrevisionMeteoController.java
-│   │   │   │   └── OpenMeteoController.java    
-│   │   │   ├── Services/
-│   │   │   │   ├── StationMeteoService.java
-│   │   │   │   ├── PrevisionMeteoService.java
-│   │   │   │   └── OpenMeteoService.java       
-│   │   │   ├── Clients/
-│   │   │   │   └── OpenMeteoClient.java        
-│   │   │   ├── Repositories/
-│   │   │   ├── Entities/
-│   │   │   ├── DTOs/
-│   │   │   │   ├── OpenMeteoResponse.java      
-│   │   │   │   ├── WeatherDTO.java             
-│   │   │   │   └── ChangementConditionsEvent.java
-│   │   │   └── Config/
-│   │   │       ├── RabbitMQConfig.java         # 🐰 RabbitMQ
-│   │   │       └── RestTemplateConfig.java     
-│   │   ├── pom.xml
-│   │   ├── OPEN_METEO_INTEGRATION.md          # ⭐ Documentation
-│   │   └── GUIDE_TESTS_POSTMAN.md             # ⭐ Tests API
-│   │
-│   └── Arrosage/         # 💧 Service Arrosage
-│       ├── src/
-│       │   ├── Controllers/
-│       │   │   ├── ProgArrosageController.java
-│       │   │   └── JournalController.java
-│       │   ├── Services/
-│       │   │   ├── ProgArrosageService.java
-│       │   │   ├── JournalService.java
-│       │   │   └── MeteoEventConsumer.java     # 🐰 RabbitMQ Consumer
-│       │   ├── Clients/
-│       │   │   ├── MeteoClient.java            # Feign
-│       │   │   └── WeatherClient.java           Feign
-│       │   ├── Listeners/
-│       │   │   └── MeteoEventListener.java     # 🐰 RabbitMQ Listener
-│       │   ├── Repositories/
-│       │   ├── Entities/
-│       │   ├── DTOs/
-│       │   └── Config/
-│       │       └── RabbitMQConfig.java         # 🐰 RabbitMQ
-│       └── pom.xml
-│
-├── frontend/                     # (À venir)
-│
-└── deployment/                   # (À venir)
-    ├── docker/
-    └── k8s/
-        
+```
+┌──────────┐  1. Sync (Feign)   ┌──────────┐
+│ Arrosage │───────────────────►│  Meteo   │  Récupérer prévisions/météo temps réel
+└──────────┘                    └──────────┘
 
-📡 Communication entre Microservices
-🔄 Communication Synchrone
-1. OpenFeign (Inter-services)
-Arrosage → Meteo : Récupération des prévisions météo
+┌──────────┐  2. Async (RabbitMQ)  ┌──────────┐
+│  Meteo   │──────────────────────►│ Arrosage │  Alertes conditions critiques
+└──────────┘    publish/consume    └──────────┘  (pluie>10mm, temp>35°C)
+```
 
-2. RestTemplate (API Externe)
-Meteo → Open-Meteo API : Récupération météo temps réel
+## 🔧 Microservices
 
-🐰 Communication Asynchrone (RabbitMQ)
-Configuration RabbitMQ
-Exchange : meteo.exchange (TopicExchange) Queue : meteo.changement.conditions Routing Key : meteo.conditions.#
+| Service | Port | Description |
+|---------|------|-------------|
+| **ms_eureka** | 8761 | Service Discovery |
+| **MS_config** | 9999 | Configuration centralisée (Git) |
+| **Gateway** | 9090 | API Gateway |
+| **MS_Meteo** | 8084 | Gestion des stations et prévisions météo |
+| **Arrosage** | 8083 | Planification et exécution de l'arrosage |
 
-Publisher (Meteo Service)
-Publie des événements lors de conditions météo critiques 
+## 📋 Fonctionnalités principales
 
-Consumer (Arrosage Service)
-Écoute et réagit aux événements météo 
+### Microservice Météo
+- Gestion des stations météo (CRUD)
+- Gestion des prévisions météo
+- Intégration API Open-Meteo (météo temps réel)
+- Publication d'événements RabbitMQ lors de conditions critiques
 
-Scénarios d'événements
-| Condition | Déclencheur | Action Arrosage | |-----------|-------------|-----------------| | Forte pluie | pluie > 10mm | ❌ Annulation des programmes | | Température élevée | temp > 35°C | ⬆️ Augmentation de 50% | | Pluie modérée | 5mm < pluie < 10mm | ⬇️ Réduction de 70% | | Vent fort | vent > 30 km/h | ⬇️ Réduction de 20% |
+### Microservice Arrosage
+- Planification automatique selon les prévisions
+- Ajustement intelligent du volume d'eau :
+  - Pluie > 10mm → Annulation
+  - Température > 35°C → +50% volume
+  - Vent > 30km/h → -20% volume
+- Journal d'exécution des arrosages
 
+## 🔄 Communication
 
-📚 Documentation Complémentaire
-OPEN_METEO_INTEGRATION.md - Documentation technique Open-Meteo
-GUIDE_TESTS_POSTMAN.md - Guide complet tests Postman
-config-repo/README.md - Documentation configuration centralisée
+| Type | Technologie | Usage |
+|------|-------------|-------|
+| **Synchrone** | OpenFeign | Arrosage → Météo (récupérer prévisions) |
+| **Asynchrone** | RabbitMQ | Météo → Arrosage (alertes conditions critiques) |
 
-👥 Auteurs
-Houyem LAHMAR  
-Projet : Système d'Irrigation Intelligente
-Année : 2026
+## 🚀 Démarrage
 
-⭐ N'oubliez pas de mettre une étoile au projet si vous le trouvez utile !
+### Ordre de lancement
+```bash
+1. MS_config      # ./mvnw spring-boot:run
+2. ms_eureka      # ./mvnw spring-boot:run
+3. Gateway        # ./mvnw spring-boot:run
+4. MS_Meteo       # ./mvnw spring-boot:run
+5. Arrosage       # ./mvnw spring-boot:run
+```
+
+### Prérequis
+- Java 17
+- MySQL (port 3307)
+- Maven
+
+## 📡 Endpoints principaux
+
+### Météo (via Gateway :9090)
+```
+GET  /api/stations/all
+POST /api/stations/create
+GET  /api/previsions/station/{id}
+GET  /api/weather/current?latitude=X&longitude=Y
+```
+
+### Arrosage (via Gateway :9090)
+```
+GET  /api/programmes
+POST /api/programmes/planifier-auto
+POST /api/programmes/planifier-temps-reel
+POST /api/programmes/{id}/executer
+GET  /api/journal
+```
+
+## 🛠️ Technologies
+
+- **Backend** : Spring Boot, Spring Cloud
+- **Base de données** : MySQL
+- **Message Broker** : RabbitMQ (CloudAMQP)
+- **API Externe** : Open-Meteo
+- **Conteneurisation** : Docker
