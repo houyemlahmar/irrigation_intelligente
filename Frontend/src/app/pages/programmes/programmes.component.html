@@ -1,0 +1,145 @@
+<div class="programmes-page">
+  <div class="page-header">
+    <div>
+      <h1>Programmes d'Arrosage</h1>
+      <p class="subtitle">Planifiez et gérez vos programmes d'irrigation</p>
+    </div>
+    <button class="btn btn-primary" (click)="openPlanificationModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Planifier Programme
+    </button>
+  </div>
+
+  <div class="filters">
+    <button 
+      *ngFor="let statut of ['TOUS', 'PLANIFIE', 'EN_COURS', 'TERMINE', 'ANNULE']"
+      class="filter-btn"
+      [class.active]="filterStatut === statut"
+      (click)="filterStatut = statut; applyFilter()">
+      {{ statut }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Chargement des programmes...</p>
+  </div>
+
+  <div *ngIf="!loading" class="programmes-list">
+    <div *ngFor="let programme of filteredProgrammes" class="programme-card">
+      <div class="card-header">
+        <div class="card-info">
+          <h3>Parcelle #{{ programme.parcelleId }}</h3>
+          <p class="date">{{ formatDate(programme.datePlanifiee) }}</p>
+        </div>
+        <span class="status-badge" [ngClass]="getStatutClass(programme.statut)">
+          {{ programme.statut }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        <div class="detail-row">
+          <div class="detail-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>{{ programme.duree }} minutes</span>
+          </div>
+          <div class="detail-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+            </svg>
+            <span>{{ programme.volumePrevu }} L</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions" *ngIf="isExecutable(programme)">
+        <button class="btn btn-success" (click)="executerProgramme(programme)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Exécuter
+        </button>
+        <button class="btn btn-danger" (click)="deleteProgramme(programme.id!)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Supprimer
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="filteredProgrammes.length === 0" class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+      </svg>
+      <p>Aucun programme trouvé</p>
+      <button class="btn btn-primary" (click)="openPlanificationModal()">Planifier un programme</button>
+    </div>
+  </div>
+
+  <!-- Modal Planification -->
+  <div class="modal-overlay" *ngIf="showPlanificationModal" (click)="closePlanificationModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Planifier un Programme</h2>
+        <button class="close-btn" (click)="closePlanificationModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form (ngSubmit)="planifierProgramme()" class="modal-form">
+        <div class="form-group">
+          <label>Type de planification</label>
+          <select [(ngModel)]="planification.type" name="type" required>
+            <option value="auto">Automatique (avec station météo)</option>
+            <option value="temps-reel">Temps réel (avec GPS)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>ID Parcelle *</label>
+          <input type="number" [(ngModel)]="planification.parcelleId" name="parcelleId" required>
+        </div>
+
+        <div *ngIf="planification.type === 'auto'" class="form-group">
+          <label>Station Météo *</label>
+          <select [(ngModel)]="planification.stationMeteoId" name="stationMeteoId" required>
+            <option [value]="undefined" disabled>Sélectionnez une station</option>
+            <option *ngFor="let station of stations" [value]="station.id">{{ station.nom }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="planification.type === 'auto'" class="form-group">
+          <label>Date *</label>
+          <input type="date" [(ngModel)]="planification.date" name="date" required>
+        </div>
+
+        <div *ngIf="planification.type === 'temps-reel'" class="form-row">
+          <div class="form-group">
+            <label>Latitude *</label>
+            <input type="number" [(ngModel)]="planification.latitude" name="latitude" step="0.0001">
+          </div>
+          <div class="form-group">
+            <label>Longitude *</label>
+            <input type="number" [(ngModel)]="planification.longitude" name="longitude" step="0.0001">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closePlanificationModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Planifier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

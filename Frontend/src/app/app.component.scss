@@ -1,0 +1,16 @@
+.app-container {
+  display: flex;
+  min-height: calc(100vh - 64px - 60px);
+}
+
+.main-content {
+  flex: 1;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: calc(100vh - 64px - 60px);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+}

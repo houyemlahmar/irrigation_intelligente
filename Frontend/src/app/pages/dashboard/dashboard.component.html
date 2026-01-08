@@ -1,0 +1,144 @@
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h1>Tableau de Bord</h1>
+    <p class="subtitle">Vue d'ensemble de votre système d'irrigation</p>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Chargement des données...</p>
+  </div>
+
+  <div *ngIf="!loading" class="dashboard-content">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.totalStations }}</h3>
+          <p>Stations Météo</p>
+          <span class="stat-badge">{{ stats.activeStations }} actives</span>
+        </div>
+      </div>
+
+      <div class="stat-card green">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.programmesActifs }}</h3>
+          <p>Programmes Actifs</p>
+          <span class="stat-badge">{{ stats.programmesAujourdhui }} aujourd'hui</span>
+        </div>
+      </div>
+
+      <div class="stat-card purple">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"></line>
+            <line x1="18" y1="20" x2="18" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="16"></line>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3>{{ (stats.volumeTotal / 1000).toFixed(1) }} m³</h3>
+          <p>Volume Total Utilisé</p>
+          <span class="stat-badge">{{ stats.volumeTotal.toFixed(0) }} L</span>
+        </div>
+      </div>
+
+      <div class="stat-card orange">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.programmesAujourdhui }}</h3>
+          <p>Arrosages Aujourd'hui</p>
+          <span class="stat-badge">Planifiés</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Programmes -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Programmes Récents</h2>
+        <a href="/programmes" class="view-all">Voir tout →</a>
+      </div>
+
+      <div class="programmes-list">
+        <div *ngFor="let programme of recentProgrammes" class="programme-card">
+          <div class="programme-header">
+            <div class="programme-info">
+              <h3>Parcelle #{{ programme.parcelleId }}</h3>
+              <p class="programme-date">{{ formatDate(programme.datePlanifiee) }}</p>
+            </div>
+            <span class="status-badge" [ngClass]="getStatutClass(programme.statut)">
+              {{ programme.statut }}
+            </span>
+          </div>
+          <div class="programme-details">
+            <div class="detail-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>{{ programme.duree }} min</span>
+            </div>
+            <div class="detail-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+              <span>{{ programme.volumePrevu }} L</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="recentProgrammes.length === 0" class="empty-state">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p>Aucun programme disponible</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stations Overview -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Stations Météo</h2>
+        <a href="/stations" class="view-all">Voir tout →</a>
+      </div>
+
+      <div class="stations-grid">
+        <div *ngFor="let station of stations.slice(0, 4)" class="station-card">
+          <div class="station-header">
+            <h3>{{ station.nom }}</h3>
+            <span class="status-indicator" [class.active]="station.active"></span>
+          </div>
+          <p class="station-location">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            {{ station.localisation }}
+          </p>
+          <div *ngIf="station.latitude && station.longitude" class="station-coords">
+            <small>{{ station.latitude.toFixed(4) }}, {{ station.longitude.toFixed(4) }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
