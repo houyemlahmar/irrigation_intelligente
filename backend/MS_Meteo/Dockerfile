@@ -1,5 +1,6 @@
 # Dockerfile pour MS_Meteo (Microservice Métier)
-FROM eclipse-temurin:17-jre-alpine
+#image de jdk
+FROM eclipse-temurin:17-jre-alpine  
 
 WORKDIR /app
 
