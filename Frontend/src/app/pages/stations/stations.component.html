@@ -131,6 +131,13 @@
           </div>
         </div>
 
+        <!-- Carte interactive pour sélectionner les coordonnées -->
+        <app-map-picker 
+          [latitude]="currentStation.latitude || 36.8065" 
+          [longitude]="currentStation.longitude || 10.1815"
+          (locationSelected)="onLocationSelected($event)">
+        </app-map-picker>
+
         <div class="form-group checkbox">
           <label>
             <input type="checkbox" [(ngModel)]="currentStation.active" name="active">

@@ -1,0 +1,174 @@
+<div class="previsions-page">
+  <div class="page-header">
+    <div>
+      <h1>Prévisions Météo</h1>
+      <p class="subtitle">Gérez les prévisions pour optimiser l'irrigation</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nouvelle Prévision
+    </button>
+  </div>
+
+  <div class="filters">
+    <select [(ngModel)]="filterStationId" (change)="applyFilter()" class="filter-select">
+      <option [value]="null">Toutes les stations</option>
+      <option *ngFor="let station of stations" [value]="station.id">{{ station.nom }}</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Chargement des prévisions...</p>
+  </div>
+
+  <div *ngIf="!loading" class="previsions-grid">
+    <div *ngFor="let prevision of filteredPrevisions" 
+         class="prevision-card" 
+         [ngClass]="getAlertClass(prevision)">
+      <div class="card-header">
+        <div class="header-info">
+          <div class="weather-icon">{{ getWeatherIcon(prevision) }}</div>
+          <div>
+            <h3>{{ prevision.station?.nom || 'Station inconnue' }}</h3>
+            <p class="date">{{ formatDate(prevision.date) }}</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-icon" (click)="openEditModal(prevision)" title="Modifier">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="btn-icon btn-danger" (click)="deletePrevision(prevision.id!)" title="Supprimer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="weather-details">
+          <div class="detail-item">
+            <span class="icon">🌡️</span>
+            <div class="detail-content">
+              <span class="label">Température</span>
+              <span class="value">{{ prevision.temperatureMin }}°C - {{ prevision.temperatureMax }}°C</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="icon">💧</span>
+            <div class="detail-content">
+              <span class="label">Pluie</span>
+              <span class="value">{{ prevision.pluiePrevue }} mm</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="icon">💨</span>
+            <div class="detail-content">
+              <span class="label">Vent</span>
+              <span class="value">{{ prevision.vent }} km/h</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="icon">💦</span>
+            <div class="detail-content">
+              <span class="label">Humidité</span>
+              <span class="value">{{ prevision.humidite }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="getAlertClass(prevision)" class="alert-badge">
+          ⚠️ Conditions critiques - Ajustement automatique des programmes
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="filteredPrevisions.length === 0" class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+      </svg>
+      <p>Aucune prévision trouvée</p>
+      <button class="btn btn-primary" (click)="openCreateModal()">Créer une prévision</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ editMode ? 'Modifier' : 'Nouvelle' }} Prévision</h2>
+        <button class="close-btn" (click)="closeModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form (ngSubmit)="savePrevision()" class="modal-form">
+        <div class="form-group">
+          <label>Station *</label>
+          <select [(ngModel)]="selectedStationId" name="stationId" required>
+            <option [value]="undefined" disabled>Sélectionnez une station</option>
+            <option *ngFor="let station of stations" [value]="station.id">{{ station.nom }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" [(ngModel)]="currentPrevision.date" name="date" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Température Min (°C) *</label>
+            <input type="number" [(ngModel)]="currentPrevision.temperatureMin" name="temperatureMin" step="0.1" required>
+          </div>
+          <div class="form-group">
+            <label>Température Max (°C) *</label>
+            <input type="number" [(ngModel)]="currentPrevision.temperatureMax" name="temperatureMax" step="0.1" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pluie prévue (mm)</label>
+            <input type="number" [(ngModel)]="currentPrevision.pluiePrevue" name="pluiePrevue" step="0.1" min="0">
+          </div>
+          <div class="form-group">
+            <label>Vent (km/h)</label>
+            <input type="number" [(ngModel)]="currentPrevision.vent" name="vent" step="0.1" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Humidité (%)</label>
+          <input type="number" [(ngModel)]="currentPrevision.humidite" name="humidite" min="0" max="100">
+        </div>
+
+        <div class="info-box">
+          ℹ️ <strong>Conditions critiques :</strong> Si pluie > 10mm ou température > 35°C, 
+          un événement sera envoyé pour ajuster automatiquement les programmes d'arrosage.
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">
+            {{ editMode ? 'Mettre à jour' : 'Créer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

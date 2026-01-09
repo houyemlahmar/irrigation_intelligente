@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProgrammeService } from '../../services/programme.service';
 import { StationService } from '../../services/station.service';
+import { NotificationService } from '../../services/notification.service';
 import { ProgrammeArrosage, StationMeteo } from '../../models/irrigation.models';
+import { MapPickerComponent } from '../../components/map-picker/map-picker.component';
 
 @Component({
   selector: 'app-programmes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MapPickerComponent],
   templateUrl: './programmes.component.html',
   styleUrl: './programmes.component.scss'
 })
@@ -43,7 +45,8 @@ export class ProgrammesComponent implements OnInit, OnDestroy {
 
   constructor(
     private programmeService: ProgrammeService,
-    private stationService: StationService
+    private stationService: StationService,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit() {
@@ -207,6 +210,11 @@ export class ProgrammesComponent implements OnInit, OnDestroy {
     this.showPlanificationModal = false;
   }
 
+  onPlanificationLocationSelected(location: { latitude: number, longitude: number }) {
+    this.planification.latitude = location.latitude;
+    this.planification.longitude = location.longitude;
+  }
+
   planifierProgramme() {
     if (this.planification.type === 'auto') {
       if (!this.planification.stationMeteoId) {
@@ -236,9 +244,12 @@ export class ProgrammesComponent implements OnInit, OnDestroy {
         this.planification.latitude,
         this.planification.longitude
       ).subscribe({
-        next: () => {
+        next: (programme) => {
           this.loadProgrammes();
           this.closePlanificationModal();
+          
+          // Vérifier les conditions critiques et notifier
+          this.verifierConditionsCritiquesTempsReel(programme);
         },
         error: (err) => console.error('Error planning programme:', err)
       });
@@ -337,5 +348,32 @@ export class ProgrammesComponent implements OnInit, OnDestroy {
 
   isExecutable(programme: ProgrammeArrosage): boolean {
     return programme.statut === 'PLANIFIE' || programme.statut === 'EN_COURS';
+  }
+
+  verifierConditionsCritiquesTempsReel(programme: ProgrammeArrosage) {
+    // Vérifier si le programme a été annulé (conditions critiques)
+    if (programme.statut === 'ANNULE' && programme.duree === 0) {
+      this.notificationService.addNotification(
+        'warning',
+        '⚠️ Conditions Météo Critiques',
+        'Forte pluie détectée en temps réel - Le programme d\'arrosage a été annulé automatiquement'
+      );
+    }
+    // Vérifier si augmentation significative (température > 35°C)
+    else if (programme.duree >= 45 && programme.volumePrevu >= 750) {
+      this.notificationService.addNotification(
+        'warning',
+        '🔥 Température Élevée Détectée',
+        `Température élevée en temps réel - Programme ajusté : ${programme.duree} min, ${programme.volumePrevu}L`
+      );
+    }
+    // Conditions normales ou légères modifications
+    else {
+      this.notificationService.addNotification(
+        'success',
+        '✅ Programme Planifié',
+        `Programme créé avec succès : ${programme.duree} min, ${programme.volumePrevu}L`
+      );
+    }
   }
 }

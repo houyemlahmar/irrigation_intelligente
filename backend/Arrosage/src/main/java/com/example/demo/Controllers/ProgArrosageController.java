@@ -94,6 +94,21 @@ public class ProgArrosageController {
 		return new ResponseEntity<>(programmesTermines, HttpStatus.OK);
 	}
 	
+	// Test: Récupérer les prévisions via Feign Client (pour déboguer)
+	@GetMapping("/test-previsions/{stationId}/{date}")
+	public ResponseEntity<?> testGetPrevisions(
+			@PathVariable Long stationId,
+			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+		try {
+			List<com.example.demo.DTOs.PrevisionDTO> previsions = 
+				progArrosageService.testGetPrevisions(stationId, date);
+			return ResponseEntity.ok(previsions);
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("Erreur: " + e.getMessage());
+		}
+	}
+	
 	// Exécuter un programme d'arrosage (ancien comportement - exécution immédiate)
 	@PostMapping("/{id}/executer")
 	public ResponseEntity<JournalArrosage> executerProgramme(

@@ -1,82 +1,53 @@
-# 🌱 Application de Gestion de l'Irrigation Automatisée
+# 🌱 Système d'Irrigation Intelligente - IrrigaSmart
 
-Application web basée sur une architecture microservices pour la gestion intelligente de l'arrosage agricole. Le système utilise les prévisions météorologiques et les données météo en temps réel (API Open-Meteo) pour optimiser automatiquement les programmes d'arrosage.
+Application web basée sur une architecture microservices pour la gestion automatisée de l'arrosage agricole avec optimisation météorologique en temps réel.
 
-## 🏗️ Architecture
+## 🚀 Fonctionnalités Principales
 
-```
-                           ┌─────────────────────────────────────────────────────────────┐
-                           │                    INFRASTRUCTURE                           │
-                           ├─────────────────────────────────────────────────────────────┤
-                           │  ┌─────────────────┐         ┌─────────────────┐            │
-                           │  │   ms_eureka     │         │    MS_config    │            │
-                           │  │  Service Disco  │◄───────►│  Config Server  │            │
-                           │  │    :8761        │         │    :9999        │            │
-                           │  └────────┬────────┘         └────────┬────────┘            │
-                           │           │         registre          │ config               │
-                           │           └────────────┬──────────────┘                     │
-                           └────────────────────────┼────────────────────────────────────┘
-                                                    │
-                           ┌────────────────────────▼────────────────────────────────────┐
-                           │                      GATEWAY                                │
-                           │  ┌─────────────────────────────────────────────────────┐   │
-                           │  │                   Gateway :9090                      │   │
-                           │  │     /api/stations/** /api/previsions/** /api/weather│   │
-                           │  │     /api/programmes/** /api/journal/**              │   │
-                           │  └──────────────────────────┬──────────────────────────┘   │
-                           └─────────────────────────────┼──────────────────────────────┘
-                                                         │
-                ┌────────────────────────────────────────┴───────────────────────────────────┐
-                │                           MICROSERVICES MÉTIER                             │
-                │         ┌───────────────────────────────┐                                  │
-     ┌──────────┼─────────┤        MS_Meteo :8084         │     ┌────────────────────────────┐│
-     │ HTTP/REST│         │  ┌─────────────────────────┐  │     │       Arrosage :8083       ││
-     │          │         │  │ • StationMeteo          │  │     │  ┌──────────────────────┐  ││
-     │          │         │  │ • PrevisionMeteo        │  │◄────┼──│ • ProgrammeArrosage  │  ││
-     │          │         │  │ • OpenMeteoClient       │  │Feign│  │ • JournalArrosage    │  ││
-     │          │         │  └─────────────────────────┘  │     │  │ • MeteoClient (Feign)│  ││
-     │          │         └───────────────┬───────────────┘     │  └──────────────────────┘  ││
-     │          │                         │                     └───────────────┬────────────┘│
-     │          └─────────────────────────┼─────────────────────────────────────┼─────────────┘
-     │                                    │                                     │
-     │                                    │        ┌─────────────────┐          │
-     │                                    │        │    RabbitMQ     │          │
-     │                                    └───────►│   (CloudAMQP)   │◄─────────┘
-     │                                   publish   │ ChangementEvent │  consume
-     │                                             └─────────────────┘
-     │
-     │         ┌─────────────────────────────────────────────────────────────┐
-     └────────►│                    EXTERNAL API                             │
-               │  ┌─────────────────────────────────────────────────────┐   │
-               │  │              Open-Meteo API (temps réel)             │   │
-               │  │         https://api.open-meteo.com/v1/forecast       │   │
-               │  └─────────────────────────────────────────────────────┘   │
-               └─────────────────────────────────────────────────────────────┘
-```
+### ⚙️ Gestion des Programmes d'Arrosage
+- **Planification Automatique** : Utilise les prévisions météo stockées en base de données
+- **Planification Temps Réel** : Intégration API Open-Meteo pour données météo actuelles
+- **Exécution en temps réel** : Compteur dégressif avec barre de progression
+- **Persistance** : Restauration automatique des états après rafraîchissement
+- **Termination automatique** : Fin de programme détectée côté serveur et client
 
-### 🔄 Flux de communication
+### 🌤️ Système Météorologique
+- **Stations Météo** : CRUD complet avec sélection GPS sur carte interactive (Leaflet)
+- **Prévisions** : Interface complète pour gérer les prévisions avec détection de conditions critiques
+- **Open-Meteo API** : Données météo en temps réel basées sur coordonnées GPS
+- **Indicateurs visuels** : Icônes météo dynamiques (☀️ 🌧️ ⛈️ 🔥 ⛅)
 
-```
-┌──────────┐  1. Sync (Feign)   ┌──────────┐
-│ Arrosage │───────────────────►│  Meteo   │  Récupérer prévisions/météo temps réel
-└──────────┘                    └──────────┘
+### 🔔 Notifications Intelligentes
+- **Centre de notifications** : Dropdown dans le header avec historique complet
+- **Toast temporaires** : Notifications flottantes avec auto-fermeture
+- **Badge de compteur** : Indicateur visuel des notifications non lues
+- **Détection automatique** : Alertes lors de conditions critiques (pluie >10mm, température >35°C)
+- **Types multiples** : Success ✅, Warning ⚠️, Error ❌, Info ℹ️
 
-┌──────────┐  2. Async (RabbitMQ)  ┌──────────┐
-│  Meteo   │──────────────────────►│ Arrosage │  Alertes conditions critiques
-└──────────┘    publish/consume    └──────────┘  (pluie>10mm, temp>35°C)
-```
+### 🗺️ Sélection GPS Interactive
+- **Cartes Leaflet** : Intégration OpenStreetMap pour sélection de coordonnées
+- **Click-to-select** : Placement de marqueur par clic sur la carte
+- **Utilisé dans** : Stations météo et planification temps réel
 
-## 🔧 Microservices
+### 📡 Communication Asynchrone (RabbitMQ)
+- **Événements automatiques** : Déclenchés lors de conditions critiques détectées
+- **Planification auto** : Événements lors de création/modification de prévisions critiques
+- **Planification temps réel** : Événements lors de détection de conditions critiques via API
+- **Ajustement automatique** : Modification des programmes existants en réponse aux événements
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **ms_eureka** | 8761 | Service Discovery |
-| **MS_config** | 9999 | Configuration centralisée (Git) |
-| **Gateway** | 9090 | API Gateway |
-| **MS_Meteo** | 8084 | Gestion des stations et prévisions météo |
-| **Arrosage** | 8083 | Planification et exécution de l'arrosage |
+## 🏗️ Architecture Technique
 
-## 📋 Fonctionnalités principales
+### Microservices
+- **ms_eureka** (8761) : Service Discovery
+- **MS_config** (9999) : Configuration centralisée
+- **Gateway** (9090) : API Gateway avec CORS
+- **MS_Meteo** (8084) : Stations, prévisions, RabbitMQ publisher
+- **Arrosage** (8083) : Programmes, OpenFeign client, RabbitMQ consumer
+
+### Technologies
+- **Backend** : Spring Boot 3.5.7, Java 17, MySQL, RabbitMQ (CloudAMQP)
+- **Frontend** : Angular 19, TypeScript, Leaflet, RxJS
+- **Communication** : OpenFeign (sync), RabbitMQ (async), REST API
 
 ### Microservice Météo
 - Gestion des stations météo (CRUD)
@@ -96,48 +67,56 @@ Application web basée sur une architecture microservices pour la gestion intell
 
 | Type | Technologie | Usage |
 |------|-------------|-------|
-| **Synchrone** | OpenFeign | Arrosage → Météo (récupérer prévisions) |
-| **Asynchrone** | RabbitMQ | Météo → Arrosage (alertes conditions critiques) |
 
-## 🚀 Démarrage
-
-### Ordre de lancement
-```bash
-1. MS_config      # ./mvnw spring-boot:run
-2. ms_eureka      # ./mvnw spring-boot:run
-3. Gateway        # ./mvnw spring-boot:run
-4. MS_Meteo       # ./mvnw spring-boot:run
-5. Arrosage       # ./mvnw spring-boot:run
-```
+## 🚀 Installation & Démarrage
 
 ### Prérequis
-- Java 17
+- Java 17, Maven
+- Node.js 18+, npm
 - MySQL (port 3307)
-- Maven
+- RabbitMQ (CloudAMQP configuré)
 
-## 📡 Endpoints principaux
-
-### Météo (via Gateway :9090)
-```
-GET  /api/stations/all
-POST /api/stations/create
-GET  /api/previsions/station/{id}
-GET  /api/weather/current?latitude=X&longitude=Y
-```
-
-### Arrosage (via Gateway :9090)
-```
-GET  /api/programmes
-POST /api/programmes/planifier-auto
-POST /api/programmes/planifier-temps-reel
-POST /api/programmes/{id}/executer
-GET  /api/journal
+### Démarrage Backend
+```bash
+# Ordre de lancement
+1. cd backend/ms_eureka && mvnw spring-boot:run
+2. cd backend/MS_config && mvnw spring-boot:run  
+3. cd backend/Gateway && mvnw spring-boot:run
+4. cd backend/MS_Meteo && mvnw spring-boot:run
+5. cd backend/Arrosage && mvnw spring-boot:run
 ```
 
-## 🛠️ Technologies
+### Démarrage Frontend
+```bash
+cd Frontend
+npm install
+npm start
+# http://localhost:4200
+```
 
-- **Backend** : Spring Boot, Spring Cloud
-- **Base de données** : MySQL
-- **Message Broker** : RabbitMQ (CloudAMQP)
-- **API Externe** : Open-Meteo
-- **Conteneurisation** : Docker
+## 📡 API Endpoints
+
+### Stations & Prévisions (via Gateway :9090)
+```
+GET/POST  /api/stations/**
+GET/POST  /api/previsions/**
+GET       /api/weather/current?latitude=X&longitude=Y
+```
+
+### Programmes d'Arrosage
+```
+GET   /api/programmes
+POST  /api/programmes/planifier-auto
+POST  /api/programmes/planifier-temps-reel
+POST  /api/programmes/{id}/demarrer
+POST  /api/programmes/{id}/terminer
+```
+
+## 📚 Documentation Complémentaire
+
+- [NOTIFICATIONS_GUIDE.md](NOTIFICATIONS_GUIDE.md) - Système de notifications et prévisions
+- [RABBITMQ_TEMPS_REEL.md](RABBITMQ_TEMPS_REEL.md) - Événements RabbitMQ temps réel
+
+## 👥 Auteur
+- Houyem Lahmar - Ingénieur génie logiciel
+Développé dans le cadre d'un projet académique de gestion intelligente de l'irrigation agricole.

@@ -150,6 +150,16 @@
           </div>
         </div>
 
+        <!-- Carte interactive pour la planification temps-réel -->
+        <div *ngIf="planification.type === 'temps-reel'">
+          <app-map-picker 
+            [latitude]="planification.latitude || 36.8065" 
+            [longitude]="planification.longitude || 10.1815"
+            [height]="'350px'"
+            (locationSelected)="onPlanificationLocationSelected($event)">
+          </app-map-picker>
+        </div>
+
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" (click)="closePlanificationModal()">Annuler</button>
           <button type="submit" class="btn btn-primary">Planifier</button>

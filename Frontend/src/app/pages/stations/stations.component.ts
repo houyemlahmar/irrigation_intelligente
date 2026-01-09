@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StationService } from '../../services/station.service';
 import { StationMeteo, WeatherDTO } from '../../models/irrigation.models';
+import { MapPickerComponent } from '../../components/map-picker/map-picker.component';
 
 @Component({
   selector: 'app-stations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MapPickerComponent],
   templateUrl: './stations.component.html',
   styleUrl: './stations.component.scss'
 })
@@ -94,6 +95,11 @@ export class StationsComponent implements OnInit {
 
   closeModal() {
     this.showCreateModal = false;
+  }
+
+  onLocationSelected(location: { latitude: number, longitude: number }) {
+    this.currentStation.latitude = location.latitude;
+    this.currentStation.longitude = location.longitude;
   }
 
   saveStation() {

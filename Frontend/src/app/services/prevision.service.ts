@@ -24,15 +24,8 @@ export class PrevisionService {
     return this.http.get<PrevisionMeteo[]>(`${this.apiUrl}/station/${stationId}`);
   }
 
-  getPrevisionByStationAndDate(stationId: number, date: string): Observable<PrevisionMeteo> {
-    return this.http.get<PrevisionMeteo>(`${this.apiUrl}/station/${stationId}/date/${date}`);
-  }
-
-  getPrevisionsByPeriod(stationId: number, start: string, end: string): Observable<PrevisionMeteo[]> {
-    const params = new HttpParams()
-      .set('start', start)
-      .set('end', end);
-    return this.http.get<PrevisionMeteo[]>(`${this.apiUrl}/station/${stationId}/period`, { params });
+  getPrevisionsByStationAndDate(stationId: number, date: string): Observable<PrevisionMeteo[]> {
+    return this.http.get<PrevisionMeteo[]>(`${this.apiUrl}/station/${stationId}/date/${date}`);
   }
 
   createPrevision(prevision: PrevisionMeteo): Observable<PrevisionMeteo> {
