@@ -119,4 +119,4 @@ POST  /api/programmes/{id}/terminer
 
 ## 👥 Auteur
 - Houyem Lahmar - Ingénieur génie logiciel
-Développé dans le cadre d'un projet académique de gestion intelligente de l'irrigation agricole.
+- Développé dans le cadre d'un projet académique de gestion intelligente de l'irrigation agricole.
