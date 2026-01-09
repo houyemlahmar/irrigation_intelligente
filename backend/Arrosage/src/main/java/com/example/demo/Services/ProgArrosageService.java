@@ -138,8 +138,21 @@ public class ProgArrosageService {
 		}
 	}
 	
-	// Exécuter un programme d'arrosage
-	public JournalArrosage executerProgramme(Long programmeId, Double volumeReel, String remarque) {
+	// Démarrer l'exécution d'un programme d'arrosage
+	public ProgrammeArrosage demarrerProgramme(Long programmeId) {
+		ProgrammeArrosage programme = progArrosageRepo.findById(programmeId).orElse(null);
+		
+		if (programme != null && "PLANIFIE".equals(programme.getStatut())) {
+			programme.setStatut("EN_COURS");
+			programme.setDatePlanifiee(LocalDateTime.now()); // Marquer l'heure de début
+			return progArrosageRepo.save(programme);
+		}
+		
+		return programme;
+	}
+	
+	// Terminer un programme d'arrosage (appelé automatiquement après la durée ou manuellement)
+	public JournalArrosage terminerProgramme(Long programmeId, Double volumeReel, String remarque) {
 		ProgrammeArrosage programme = progArrosageRepo.findById(programmeId).orElse(null);
 		
 		if (programme != null) {
@@ -149,13 +162,39 @@ public class ProgArrosageService {
 			JournalArrosage journal = new JournalArrosage();
 			journal.setProgrammeId(programmeId);
 			journal.setDateExecution(LocalDateTime.now());
-			journal.setVolumeReel(volumeReel);
+			journal.setVolumeReel(volumeReel != null ? volumeReel : programme.getVolumePrevu());
 			journal.setRemarque(remarque);
 			
 			return journalRepo.save(journal);
 		}
 		
 		return null;
+	}
+	
+	// Vérifier et terminer automatiquement les programmes EN_COURS dont la durée est dépassée
+	public List<ProgrammeArrosage> verifierEtTerminerProgrammesExpires() {
+		List<ProgrammeArrosage> programmes = progArrosageRepo.findByStatut("EN_COURS");
+		List<ProgrammeArrosage> programmesTermines = new java.util.ArrayList<>();
+		
+		for (ProgrammeArrosage programme : programmes) {
+			LocalDateTime dateDebut = programme.getDatePlanifiee();
+			LocalDateTime dateFin = dateDebut.plusMinutes(programme.getDuree());
+			
+			if (LocalDateTime.now().isAfter(dateFin)) {
+				log.info("Programme {} expiré, termination automatique", programme.getId());
+				terminerProgramme(programme.getId(), programme.getVolumePrevu(), "Terminé automatiquement");
+				programme.setStatut("TERMINE");
+				programmesTermines.add(programme);
+			}
+		}
+		
+		return programmesTermines;
+	}
+	
+	// Méthode de compatibilité (conservée pour ne pas casser l'API)
+	public JournalArrosage executerProgramme(Long programmeId, Double volumeReel, String remarque) {
+		demarrerProgramme(programmeId);
+		return terminerProgramme(programmeId, volumeReel, remarque);
 	}
 	
 	// Récupérer tous les programmes

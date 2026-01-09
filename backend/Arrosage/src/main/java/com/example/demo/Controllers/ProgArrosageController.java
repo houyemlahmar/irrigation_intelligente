@@ -64,7 +64,37 @@ public class ProgArrosageController {
 		return new ResponseEntity<>(programme, HttpStatus.CREATED);
 	}
 	
-	// Exécuter un programme d'arrosage
+	// Démarrer l'exécution d'un programme (passe à EN_COURS)
+	@PostMapping("/{id}/demarrer")
+	public ResponseEntity<ProgrammeArrosage> demarrerProgramme(@PathVariable Long id) {
+		ProgrammeArrosage programme = progArrosageService.demarrerProgramme(id);
+		if (programme != null) {
+			return new ResponseEntity<>(programme, HttpStatus.OK);
+		}
+		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+	
+	// Terminer un programme d'arrosage (passe à TERMINE)
+	@PostMapping("/{id}/terminer")
+	public ResponseEntity<JournalArrosage> terminerProgramme(
+			@PathVariable Long id,
+			@RequestParam(required = false) Double volumeReel,
+			@RequestParam(required = false) String remarque) {
+		JournalArrosage journal = progArrosageService.terminerProgramme(id, volumeReel, remarque);
+		if (journal != null) {
+			return new ResponseEntity<>(journal, HttpStatus.CREATED);
+		}
+		return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+	
+	// Vérifier et terminer automatiquement les programmes expirés
+	@PostMapping("/verifier-expires")
+	public ResponseEntity<List<ProgrammeArrosage>> verifierProgrammesExpires() {
+		List<ProgrammeArrosage> programmesTermines = progArrosageService.verifierEtTerminerProgrammesExpires();
+		return new ResponseEntity<>(programmesTermines, HttpStatus.OK);
+	}
+	
+	// Exécuter un programme d'arrosage (ancien comportement - exécution immédiate)
 	@PostMapping("/{id}/executer")
 	public ResponseEntity<JournalArrosage> executerProgramme(
 			@PathVariable Long id,

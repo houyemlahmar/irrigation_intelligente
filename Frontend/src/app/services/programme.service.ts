@@ -55,6 +55,25 @@ export class ProgrammeService {
     return this.http.post<ProgrammeArrosage>(`${this.apiUrl}/planifier-temps-reel`, null, { params });
   }
 
+  demarrerProgramme(id: number): Observable<ProgrammeArrosage> {
+    return this.http.post<ProgrammeArrosage>(`${this.apiUrl}/${id}/demarrer`, null);
+  }
+
+  terminerProgramme(id: number, volumeReel?: number, remarque?: string): Observable<JournalArrosage> {
+    let params = new HttpParams();
+    if (volumeReel) {
+      params = params.set('volumeReel', volumeReel.toString());
+    }
+    if (remarque) {
+      params = params.set('remarque', remarque);
+    }
+    return this.http.post<JournalArrosage>(`${this.apiUrl}/${id}/terminer`, null, { params });
+  }
+
+  verifierProgrammesExpires(): Observable<ProgrammeArrosage[]> {
+    return this.http.post<ProgrammeArrosage[]>(`${this.apiUrl}/verifier-expires`, null);
+  }
+
   executerProgramme(id: number, volumeReel: number, remarque?: string): Observable<JournalArrosage> {
     let params = new HttpParams().set('volumeReel', volumeReel.toString());
     if (remarque) {
