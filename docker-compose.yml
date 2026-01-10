@@ -58,6 +58,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:9999
       SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
       SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
@@ -81,6 +82,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:9999
       SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
       SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
@@ -101,21 +103,22 @@ services:
       - "9090:9090"
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_CLOUD_CONFIG_URI: http://config-server:9999
     depends_on:
       config-server:
         condition: service_healthy
     networks:
       - irrigasmart-network
 
-#  frontend:
-#    image: ghcr.io/${GITHUB_USER}/irrigasmart-frontend:latest
-#    container_name: irrigasmart-frontend
-#    ports:
-#      - "80:80"
-#    depends_on:
-#      - gateway
-#    networks:
-#      - irrigasmart-network
+  frontend:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-frontend:latest
+    container_name: irrigasmart-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    networks:
+      - irrigasmart-network
 
 networks:
   irrigasmart-network:

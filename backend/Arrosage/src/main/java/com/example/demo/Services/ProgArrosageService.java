@@ -73,9 +73,9 @@ public class ProgArrosageService {
 		
 		if (!previsions.isEmpty()) {
 			PrevisionDTO prevision = previsions.get(0);
-			log.info("Prévision récupérée: temp={}°C, pluie={}mm, vent={}km/h, humidité={}%", 
+			log.info("Prévision récupérée: temp={}°C, pluie={}mm, vent={}km/h", 
 				prevision.getTemperatureMax(), prevision.getPluiePrevue(), 
-				prevision.getVent(), prevision.getHumidite());
+				prevision.getVent());
 			ajusterProgrammeSelonPrevision(programme, prevision);
 		} else {
 			// Valeurs par défaut si pas de prévision
