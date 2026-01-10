@@ -1,0 +1,125 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: irrigasmart-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: irrigation_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - irrigasmart-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  eureka:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-eureka:latest
+    container_name: irrigasmart-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - irrigasmart-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  config-server:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-config:latest
+    container_name: irrigasmart-config
+    ports:
+      - "9999:9999"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+    depends_on:
+      eureka:
+        condition: service_healthy
+    networks:
+      - irrigasmart-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:9999/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  meteo:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-meteo:latest
+    container_name: irrigasmart-meteo
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/irrigation_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_RABBITMQ_VIRTUAL_HOST: ${RABBITMQ_VHOST}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    networks:
+      - irrigasmart-network
+
+  arrosage:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-arrosage:latest
+    container_name: irrigasmart-arrosage
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/irrigation_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_RABBITMQ_HOST: ${RABBITMQ_HOST}
+      SPRING_RABBITMQ_PORT: ${RABBITMQ_PORT}
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SPRING_RABBITMQ_VIRTUAL_HOST: ${RABBITMQ_VHOST}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    networks:
+      - irrigasmart-network
+
+  gateway:
+    image: ghcr.io/${GITHUB_USER}/irrigasmart-gateway:latest
+    container_name: irrigasmart-gateway
+    ports:
+      - "9090:9090"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - irrigasmart-network
+
+#  frontend:
+#    image: ghcr.io/${GITHUB_USER}/irrigasmart-frontend:latest
+#    container_name: irrigasmart-frontend
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - gateway
+#    networks:
+#      - irrigasmart-network
+
+networks:
+  irrigasmart-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
